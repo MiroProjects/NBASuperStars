@@ -80,7 +80,14 @@ namespace NBASuperStars
             using (StreamReader r = new StreamReader(path))
             {
                 string json = r.ReadToEnd();
-                players = JsonConvert.DeserializeObject<List<Player>>(json);
+                try
+                {
+                    players = JsonConvert.DeserializeObject<List<Player>>(json);
+                }
+                catch (JsonException je)
+                {
+                    Console.WriteLine($"An exception occured while trying to prase the JSON file: {je.Message}");
+                }
             }
 
             return players;
