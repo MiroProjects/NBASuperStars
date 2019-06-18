@@ -111,7 +111,7 @@ namespace NBASuperStars
                     return true;
                 }
                 return false;
-            });
+            }).OrderByDescending(p => p.Rating);
         }
 
         /// <summary>
