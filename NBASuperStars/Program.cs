@@ -8,12 +8,49 @@ namespace NBASuperStars
 {
     class Program
     {
-        const string jsonFilePathMain = @"../../../NBAJson.json";
+        const string jsonFilePathDefaultPath = @"../../../NBAJson.json";
+        const string csvSaveDefaultPath = @"../../../PlayersFile";
 
         /// <summary>
         /// The program's entry point
         /// </summary>
         static void Main()
+        {
+            Program program = new Program();
+            var result = program.GetInputData();
+
+            if (!result.isDataCorrect)
+            {
+                Console.WriteLine("Please provide valid data!");
+                return;
+            }
+
+            List<Player> players = program.ParseJson(result.jsonFilePath);
+            if (players != null)
+            {
+                IEnumerable<Player> filteredPlayers = program.FilterPlayers(result.maxNumberOfYears, result.minRating, players);
+                try
+                {
+                    program.SaveToSCV(filteredPlayers, result.csvFilePath);
+                }
+                catch (IOException e)
+                {
+                    Console.WriteLine($"An exception occured while writing the CSV file: {e.Message}");
+                }
+                catch (UnauthorizedAccessException uae)
+                {
+                    Console.WriteLine($"An exception occured while trying to access the path: {uae.Message}");
+                }
+            }
+
+            Console.ReadKey(true);
+        }
+
+        /// <summary>
+        /// Method for receiving all the input data
+        /// </summary>
+        /// <returns>the input data as a value tuple object</returns>
+        public (string jsonFilePath, int maxNumberOfYears, int minRating, string csvFilePath, bool isDataCorrect) GetInputData()
         {
             bool isDataCorrect = true;
             Console.Write("Enter a valid path to a JSON file: ");
@@ -30,37 +67,17 @@ namespace NBASuperStars
             Console.Write("Enter a valid path to save the file: ");
             string csvFilePath = Console.ReadLine();
 
-            if (!isDataCorrect)
-            {
-                Console.WriteLine("Please provide valid data!");
-                return;
-            }
-
             if (string.IsNullOrEmpty(jsonFilePath))
             {
-                jsonFilePath = jsonFilePathMain;
+                jsonFilePath = jsonFilePathDefaultPath;
             }
 
             if (string.IsNullOrEmpty(csvFilePath))
             {
-                csvFilePath = "PlayersFile";
+                csvFilePath = csvSaveDefaultPath;
             }
 
-            List<Player> players = ParseJson(jsonFilePath);
-            if (players != null)
-            {
-                IEnumerable<Player> filteredPlayers = FilterPlayers(maxNumberOfYears, minRating, players);
-                try
-                {
-                    SaveToSCV(filteredPlayers, csvFilePath);
-                }
-                catch (IOException e)
-                {
-                    Console.WriteLine($"An exception occured while writing the CSV file: {e.Message}");
-                }
-            }
-
-            Console.ReadKey(true);
+            return (jsonFilePath, maxNumberOfYears, minRating, csvFilePath, isDataCorrect);
         }
 
         /// <summary>
@@ -68,7 +85,7 @@ namespace NBASuperStars
         /// </summary>
         /// <param name="path">the path to the json file</param>
         /// <returns>list of the parsed objects</returns>
-        public static List<Player> ParseJson(string path)
+        public List<Player> ParseJson(string path)
         {
             if (!File.Exists(path))
             {
@@ -86,7 +103,7 @@ namespace NBASuperStars
                 }
                 catch (JsonException je)
                 {
-                    Console.WriteLine($"An exception occured while trying to prase the JSON file: {je.Message}");
+                    Console.WriteLine($"An exception occured while trying to parse the JSON file: {je.Message}");
                 }
             }
 
@@ -100,7 +117,7 @@ namespace NBASuperStars
         /// <param name="minRating">the minimum rating the player should have to qualify.</param>
         /// <param name="fullPlayerCollection">the collection to filter</param>
         /// <returns></returns>
-        public static IEnumerable<Player> FilterPlayers(int maxYears, int minRating, List<Player> fullPlayerCollection)
+        public IEnumerable<Player> FilterPlayers(int maxYears, int minRating, List<Player> fullPlayerCollection)
         {
             return fullPlayerCollection.Where(player =>
             {
@@ -119,7 +136,7 @@ namespace NBASuperStars
         /// </summary>
         /// <param name="players">the collection of players to save</param>
         /// <param name="path">the path where to save the collection</param>
-        public static void SaveToSCV(IEnumerable<Player> players, string path)
+        public void SaveToSCV(IEnumerable<Player> players, string path)
         {
             //Local function for checking if file exists
             bool CheckFile()
